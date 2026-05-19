@@ -9,6 +9,11 @@ export enum GameType {
   OPEN_CHALLENGE = 'open_challenge'
 }
 
+export enum MatchType {
+  SMALL_SIDED = 'small_sided',
+  FULL_FIELD = '11v11'
+}
+
 export interface Team {
   id: string;
   name: string;
@@ -39,6 +44,7 @@ export interface Slot {
   opponentTeamId?: string;
   opponentTeam?: Team; // Joined data
   gameType: GameType;
+  matchType?: MatchType;
 }
 
 export interface Booking {

@@ -5,8 +5,8 @@ import {
   collection, doc, updateDoc, addDoc, onSnapshot, query, where, 
   serverTimestamp, runTransaction 
 } from 'firebase/firestore';
-import { Slot, Field, Team, SlotStatus, GameType } from '../types';
-import { X, Shield, Lock, Globe, AlertCircle, CheckCircle2, Clock } from 'lucide-react';
+import { Slot, Field, Team, SlotStatus, GameType, MatchType } from '../types';
+import { X, Shield, Lock, Globe, AlertCircle, CheckCircle2, Clock, Sword, Users2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { format } from 'date-fns';
 
@@ -22,6 +22,10 @@ const BookingModal: React.FC<BookingModalProps> = ({ slot, field, onClose }) => 
   const [selectedTeamId, setSelectedTeamId] = useState<string>('');
   const [gameType, setGameType] = useState<GameType>(GameType.PRIVATE);
   const [loading, setLoading] = useState(false);
+
+  const price = slot.price;
+  const matchType = slot.matchType || MatchType.SMALL_SIDED;
+  
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -56,6 +60,8 @@ const BookingModal: React.FC<BookingModalProps> = ({ slot, field, onClose }) => 
           status: SlotStatus.BOOKED,
           bookedByTeamId: selectedTeamId,
           gameType: gameType,
+          matchType: matchType,
+          price: price,
           updatedAt: serverTimestamp()
         });
 
@@ -64,7 +70,8 @@ const BookingModal: React.FC<BookingModalProps> = ({ slot, field, onClose }) => 
         transaction.set(bookingRef, {
           slotId: slot.id,
           teamId: selectedTeamId,
-          amount: slot.price,
+          amount: price,
+          matchType: matchType,
           status: 'confirmed',
           createdAt: serverTimestamp()
         });
@@ -117,7 +124,7 @@ const BookingModal: React.FC<BookingModalProps> = ({ slot, field, onClose }) => 
                     <p className="text-sm text-slate-500">{format(slot.startTime, 'EEEE, MMM d')}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-bold text-slate-900">${slot.price}</p>
+                    <p className="text-sm font-bold text-slate-900">${price}</p>
                     <p className="text-xs text-slate-400">Total Price</p>
                   </div>
                 </div>
@@ -146,6 +153,13 @@ const BookingModal: React.FC<BookingModalProps> = ({ slot, field, onClose }) => 
                     ))}
                   </select>
                 )}
+              </div>
+
+              <div className="flex items-center gap-2 p-3 bg-slate-50 rounded-xl border border-slate-100">
+                {matchType === MatchType.SMALL_SIDED ? <Users2 className="w-4 h-4 text-slate-400" /> : <Sword className="w-4 h-4 text-slate-400" />}
+                <span className="text-sm font-bold text-slate-600">
+                  {matchType === MatchType.SMALL_SIDED ? 'Small Sided Match' : '11v11 Match'}
+                </span>
               </div>
 
               {/* Game Type Selection */}

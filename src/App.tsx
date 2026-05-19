@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { FirebaseProvider, useAuth } from './components/FirebaseContext';
-import { signInWithGoogle, auth } from './lib/firebase';
-import { Calendar, Users, LayoutDashboard, LogOut, Ticket, Settings } from 'lucide-react';
+import { auth } from './lib/firebase';
+import { Calendar, Users, LayoutDashboard, LogOut, Ticket, Settings, User as UserIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import Inventory from './components/Inventory';
 import MyTeams from './components/MyTeams';
 import Opponents from './components/Opponents';
 import AdminDashboard from './components/AdminDashboard';
+import Auth from './components/Auth';
 
 const ADMIN_EMAIL = 'socalcustomcanopies@gmail.com';
 
@@ -25,27 +26,7 @@ function AppContent() {
   }
 
   if (!user) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-[#F5F5F5] p-4">
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="w-full max-w-md p-8 bg-white rounded-3xl shadow-xl border border-slate-100 text-center"
-        >
-          <div className="w-16 h-16 bg-slate-900 rounded-2xl flex items-center justify-center mx-auto mb-6">
-            <Ticket className="text-white w-8 h-8" />
-          </div>
-          <h1 className="text-3xl font-bold text-slate-900 mb-2 font-sans tracking-tight">FieldSlot</h1>
-          <p className="text-slate-500 mb-8 font-sans">Book fields, find opponents, and lead your team to victory.</p>
-          <button
-            onClick={signInWithGoogle}
-            className="w-full py-4 bg-slate-900 text-white rounded-2xl font-semibold hover:bg-slate-800 transition-colors flex items-center justify-center gap-3"
-          >
-            Sign in with Google
-          </button>
-        </motion.div>
-      </div>
-    );
+    return <Auth />;
   }
 
   return (
@@ -60,8 +41,16 @@ function AppContent() {
           
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2 text-sm text-slate-600 bg-slate-50 px-3 py-1.5 rounded-full border border-slate-100">
-              <img src={user.photoURL || ''} alt="" className="w-6 h-6 rounded-full" />
-              <span className="font-medium hidden sm:inline">{user.displayName}</span>
+              {user.photoURL ? (
+                <img src={user.photoURL} alt="" className="w-6 h-6 rounded-full" />
+              ) : (
+                <div className="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center">
+                  <UserIcon className="w-3.5 h-3.5 text-slate-400" />
+                </div>
+              )}
+              <span className="font-medium hidden sm:inline truncate max-w-[150px]">
+                {user.displayName || user.email || user.phoneNumber || 'User'}
+              </span>
             </div>
             <button 
               onClick={() => auth.signOut()}

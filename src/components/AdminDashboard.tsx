@@ -4,8 +4,8 @@ import {
   collection, onSnapshot, addDoc, deleteDoc, doc, updateDoc, 
   query, orderBy, serverTimestamp, getDocs 
 } from 'firebase/firestore';
-import { Field, Slot, Team, SlotStatus, GameType } from '../types';
-import { Plus, Trash2, MapPin, Clock, Users, ShieldAlert, Check, X } from 'lucide-react';
+import { Field, Slot, Team, SlotStatus, GameType, MatchType } from '../types';
+import { Plus, Trash2, MapPin, Clock, Users, ShieldAlert, Check, X, Users2, Sword } from 'lucide-react';
 import { format, addHours, parse } from 'date-fns';
 import { motion } from 'motion/react';
 
@@ -21,7 +21,13 @@ const AdminDashboard: React.FC = () => {
   const [newSlotFieldId, setNewSlotFieldId] = useState('');
   const [newSlotDate, setNewSlotDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [newSlotTime, setNewSlotTime] = useState('09:00');
-  const [newSlotPrice, setNewSlotPrice] = useState(65);
+  const [newSlotMatchType, setNewSlotMatchType] = useState<MatchType>(MatchType.SMALL_SIDED);
+  const [newSlotPrice, setNewSlotPrice] = useState(90);
+
+  useEffect(() => {
+    // Update price when match type changes in slot creation
+    setNewSlotPrice(newSlotMatchType === MatchType.SMALL_SIDED ? 90 : 110);
+  }, [newSlotMatchType]);
 
   useEffect(() => {
     const unsubFields = onSnapshot(collection(db, 'fields'), (snapshot) => {
@@ -85,7 +91,8 @@ const AdminDashboard: React.FC = () => {
       endTime: end,
       price: Number(newSlotPrice),
       status: SlotStatus.AVAILABLE,
-      gameType: GameType.PRIVATE
+      gameType: GameType.PRIVATE,
+      matchType: newSlotMatchType
     });
   };
 
@@ -161,7 +168,37 @@ const AdminDashboard: React.FC = () => {
               <input type="date" value={newSlotDate} onChange={e => setNewSlotDate(e.target.value)} className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm" />
               <input type="time" value={newSlotTime} onChange={e => setNewSlotTime(e.target.value)} className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm" />
             </div>
-            <input type="number" placeholder="Price" value={newSlotPrice} onChange={e => setNewSlotPrice(Number(e.target.value))} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2" />
+            
+            <div className="space-y-2">
+              <label className="text-[10px] uppercase font-bold text-slate-400 px-1">Match Type</label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setNewSlotMatchType(MatchType.SMALL_SIDED)}
+                  className={`flex items-center justify-center gap-2 py-2 rounded-xl border text-xs font-bold transition-all ${
+                    newSlotMatchType === MatchType.SMALL_SIDED ? 'bg-slate-900 text-white border-slate-900' : 'bg-slate-50 text-slate-500 border-slate-200'
+                  }`}
+                >
+                  <Users2 className="w-3 h-3" />
+                  Small Sided
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setNewSlotMatchType(MatchType.FULL_FIELD)}
+                  className={`flex items-center justify-center gap-2 py-2 rounded-xl border text-xs font-bold transition-all ${
+                    newSlotMatchType === MatchType.FULL_FIELD ? 'bg-slate-900 text-white border-slate-900' : 'bg-slate-50 text-slate-500 border-slate-200'
+                  }`}
+                >
+                  <Sword className="w-3 h-3" />
+                  11v11
+                </button>
+              </div>
+            </div>
+
+            <div className="relative">
+              <input type="number" placeholder="Price" value={newSlotPrice} onChange={e => setNewSlotPrice(Number(e.target.value))} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2" />
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-bold">$</span>
+            </div>
             <button className="w-full bg-slate-900 text-white py-2 rounded-xl font-bold">Add Slot</button>
           </form>
 
@@ -197,6 +234,7 @@ const AdminDashboard: React.FC = () => {
             <thead className="bg-slate-50 text-slate-400 text-[10px] uppercase font-black tracking-widest">
               <tr>
                 <th className="px-6 py-4">Status</th>
+                <th className="px-6 py-4">Match Type</th>
                 <th className="px-6 py-4">Venue & Time</th>
                 <th className="px-6 py-4">Team A (Challenger)</th>
                 <th className="px-6 py-4">Team B (Opponent)</th>
@@ -214,6 +252,11 @@ const AdminDashboard: React.FC = () => {
                       ) : (
                         <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full text-[10px] font-bold">Private</span>
                       )}
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="text-xs font-bold text-slate-500 uppercase tracking-tighter">
+                        {(s as any).matchType === 'small_sided' ? 'Small Sided' : (s as any).matchType === '11v11' ? '11v11' : '---'}
+                      </span>
                     </td>
                     <td className="px-6 py-4 font-medium text-slate-900">
                       <div>{fields.find(f => f.id === s.fieldId)?.name}</div>

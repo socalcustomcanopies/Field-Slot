@@ -1,6 +1,6 @@
 import { db } from './firebase';
 import { collection, addDoc, serverTimestamp, getDocs, deleteDoc, query } from 'firebase/firestore';
-import { SlotStatus, GameType } from '../types';
+import { SlotStatus, GameType, MatchType } from '../types';
 import { addDays, setHours, setMinutes } from 'date-fns';
 
 export async function seedInitialData() {
@@ -72,13 +72,19 @@ export async function seedInitialData() {
         const finalStartTime = setMinutes(setHours(date, hour), mins);
         const finalEndTime = setMinutes(setHours(date, Math.floor(startHr + 1.5)), ( (startHr + 1.5) % 1 ) * 60);
 
+        const field = fields[fieldIds.indexOf(fieldId)];
+        const isFullField = field.name.includes('11v11') || field.name.includes('Stadium');
+        const matchType = isFullField ? MatchType.FULL_FIELD : MatchType.SMALL_SIDED;
+        const price = isFullField ? 110 : 90;
+
         await addDoc(collection(db, 'slots'), {
           fieldId,
           startTime: finalStartTime,
           endTime: finalEndTime,
-          price: 65,
+          price,
           status: SlotStatus.AVAILABLE,
-          gameType: GameType.PRIVATE
+          gameType: GameType.PRIVATE,
+          matchType
         });
       }
     }
