@@ -1,0 +1,6 @@
+{
+  "name": "FieldSlot - Team Booking & Matchmaking",
+  "description": "A professional sports field booking platform. Teams can book slots, schedule games, find opponents, and manage their match calendar with integrated payment flows.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,64 @@
+{
+  "entities": {
+    "Team": {
+      "title": "Team",
+      "description": "Information about a sports team",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "Team name" },
+        "managerId": { "type": "string", "description": "UID of the user managing the team" },
+        "logoUrl": { "type": "string", "description": "Optional team logo URL" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "managerId"]
+    },
+    "Field": {
+      "title": "Field",
+      "description": "A sports field venue",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "location": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "capacity": { "type": "number" },
+        "amenities": { "type": "array" }
+      },
+      "required": ["name", "location"]
+    },
+    "Slot": {
+      "title": "Slot",
+      "description": "A specific time slot for a field",
+      "type": "object",
+      "properties": {
+        "fieldId": { "type": "string" },
+        "startTime": { "type": "string", "format": "date-time" },
+        "endTime": { "type": "string", "format": "date-time" },
+        "price": { "type": "number" },
+        "status": { "type": "string", "enum": ["available", "booked", "pending"] },
+        "bookedByTeamId": { "type": "string" },
+        "opponentTeamId": { "type": "string" },
+        "gameType": { "type": "string", "enum": ["private", "open_challenge"] }
+      },
+      "required": ["fieldId", "startTime", "endTime", "price", "status"]
+    },
+    "Booking": {
+      "title": "Booking",
+      "description": "Record of a slot booking payment/reservation",
+      "type": "object",
+      "properties": {
+        "slotId": { "type": "string" },
+        "teamId": { "type": "string" },
+        "amount": { "type": "number" },
+        "status": { "type": "string", "enum": ["pending", "confirmed", "failed"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["slotId", "teamId", "amount", "status"]
+    }
+  },
+  "firestore": {
+    "/teams/{teamId}": { "schema": "Team", "description": "Team profiles" },
+    "/fields/{fieldId}": { "schema": "Field", "description": "Field venues" },
+    "/slots/{slotId}": { "schema": "Slot", "description": "Inventory of available and booked times" },
+    "/bookings/{bookingId}": { "schema": "Booking", "description": "Financial and reservation records" }
+  }
+}

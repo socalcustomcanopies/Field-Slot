@@ -1,0 +1,72 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ---------------------------------------------------------
+    // HELPERS
+    // ---------------------------------------------------------
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // ---------------------------------------------------------
+    // RULES
+    // ---------------------------------------------------------
+
+    // Teams
+    match /teams/{teamId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && incoming().managerId == request.auth.uid;
+      allow update: if isSignedIn() && isOwner(existing().managerId) && 
+                      incoming().managerId == existing().managerId;
+      allow delete: if isSignedIn() && isOwner(existing().managerId);
+    }
+
+    // Fields (Venues)
+    match /fields/{fieldId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn(); // Allow seeding for demo
+      allow write: if false; // Protect existing ones
+    }
+
+    // Slots
+    match /slots/{slotId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn(); // Allow seeding for demo
+      
+      // Update logic for booking and challenges
+      allow update: if isSignedIn() &&
+                      (
+                        // Booking action
+                        (existing().status == 'available' && 
+                         incoming().status in ['booked', 'pending'] &&
+                         incoming().diff(existing()).affectedKeys().hasOnly(['status', 'bookedByTeamId', 'opponentTeamId', 'gameType', 'updatedAt'])) ||
+                        // Challenge action (adding opponent)
+                        (existing().status == 'booked' && 
+                         existing().gameType == 'open_challenge' &&
+                         incoming().diff(existing()).affectedKeys().hasOnly(['opponentTeamId', 'updatedAt']))
+                      );
+    }
+
+    // Bookings
+    match /bookings/{bookingId} {
+      // Users can see bookings for teams they manage
+      allow read, list: if isSignedIn() && 
+                          get(/databases/$(database)/documents/teams/$(resource.data.teamId)).data.managerId == request.auth.uid;
+      
+      allow create: if isSignedIn() && 
+                      get(/databases/$(database)/documents/teams/$(incoming().teamId)).data.managerId == request.auth.uid;
+    }
+  }
+}
