@@ -4,10 +4,11 @@ import {
   createUserWithEmailAndPassword,
   signInWithPhoneNumber,
   RecaptchaVerifier,
-  ConfirmationResult
+  ConfirmationResult,
+  getRedirectResult
 } from 'firebase/auth';
-import { auth, signInWithGoogle } from '../lib/firebase';
-import { Mail, Smartphone, MailQuestion, ShieldCheck, Ticket, AlertCircle, ArrowRight } from 'lucide-react';
+import { auth, signInWithGoogle, signInWithGoogleRedirect } from '../lib/firebase';
+import { Mail, Smartphone, MailQuestion, ShieldCheck, Ticket, AlertCircle, ArrowRight, ExternalLink } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 const Auth: React.FC = () => {
@@ -22,15 +23,51 @@ const Auth: React.FC = () => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (method === 'phone' && !window.recaptchaVerifier) {
-      window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-        'size': 'invisible',
-        'callback': () => {
-          // reCAPTCHA solved, allow signInWithPhoneNumber.
+    // Check for redirect result on mount
+    const checkRedirect = async () => {
+      try {
+        const result = await getRedirectResult(auth);
+        if (result) {
+          console.log("Logged in via redirect", result.user);
         }
-      });
+      } catch (err: any) {
+        console.error("Redirect auth error", err);
+        setError(err.message);
+      }
+    };
+    checkRedirect();
+  }, []);
+
+  const initRecaptcha = () => {
+    if (!window.recaptchaVerifier) {
+      const container = document.getElementById('recaptcha-container');
+      if (container) {
+        window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+          'size': 'invisible',
+          'callback': () => {}
+        });
+      }
     }
-  }, [method]);
+  };
+
+  const handleGoogleSignIn = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      await signInWithGoogle();
+    } catch (err: any) {
+      console.error("Popup failed, trying redirect...", err);
+      // If popup is blocked, common in iframes, try redirect or suggest it
+      if (err.code === 'auth/popup-blocked' || err.code === 'auth/internal-error') {
+        setError("Popup was blocked. Redirecting to Google...");
+        setTimeout(() => signInWithGoogleRedirect(), 1500);
+      } else {
+        setError(err.message);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,11 +91,19 @@ const Auth: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
+      initRecaptcha();
       const appVerifier = window.recaptchaVerifier;
+      if (!appVerifier) throw new Error("Recaptcha not initialized");
+      
       const result = await signInWithPhoneNumber(auth, phone, appVerifier);
       setConfirmationResult(result);
     } catch (err: any) {
+      console.error("Phone sign in error", err);
       setError(err.message);
+      if (window.recaptchaVerifier) {
+        window.recaptchaVerifier.clear();
+        (window as any).recaptchaVerifier = null;
+      }
     } finally {
       setLoading(false);
     }
@@ -123,14 +168,22 @@ const Auth: React.FC = () => {
               initial={{ opacity: 0, x: 10 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -10 }}
+              className="space-y-4"
             >
               <button
-                onClick={signInWithGoogle}
-                className="w-full py-4 bg-white border-2 border-slate-100 text-slate-900 rounded-2xl font-bold hover:bg-slate-50 transition-colors flex items-center justify-center gap-3"
+                onClick={handleGoogleSignIn}
+                disabled={loading}
+                className="w-full py-4 bg-white border-2 border-slate-100 text-slate-900 rounded-2xl font-bold hover:bg-slate-50 transition-colors flex items-center justify-center gap-3 disabled:opacity-50"
               >
                 <img src="https://www.google.com/favicon.ico" className="w-5 h-5" alt="" />
-                Continue with Google
+                {loading ? 'Connecting...' : 'Continue with Google'}
               </button>
+              
+              <div className="p-4 bg-blue-50/50 rounded-2xl border border-blue-100/50">
+                <p className="text-[11px] text-blue-600 leading-relaxed font-medium">
+                  If the popup doesn't appear, please ensure popups are allowed for this site or use the button above to try the redirect method.
+                </p>
+              </div>
             </motion.div>
           )}
 
@@ -242,9 +295,27 @@ const Auth: React.FC = () => {
             className="mt-6 p-4 bg-red-50 text-red-600 rounded-xl text-sm flex items-start gap-2"
           >
             <AlertCircle className="w-5 h-5 shrink-0" />
-            <span>{error}</span>
+            <div className="space-y-1">
+              <span className="font-bold">Error:</span>
+              <p className="opacity-90">{error}</p>
+            </div>
           </motion.div>
         )}
+
+        <div className="mt-8 border-t border-slate-50 pt-6">
+          <div className="flex items-start gap-3 text-slate-400 group cursor-help">
+            <MailQuestion className="w-4 h-4 shrink-0 mt-0.5" />
+            <div className="text-[10px] leading-relaxed">
+              <p className="font-bold text-slate-500 mb-1">Trouble logging in?</p>
+              <ul className="list-disc list-inside space-y-1">
+                <li>Verify your internet connection</li>
+                <li>Check if ad-blockers are interfering</li>
+                <li>Ensure Third-Party Cookies are allowed (required for Firebase Auth in iframes)</li>
+                <li>Try opening the app in a <a href={window.location.href} target="_blank" rel="noreferrer" className="text-slate-900 font-bold underline inline-flex items-center gap-0.5">new tab <ExternalLink className="w-2.5 h-2.5" /></a></li>
+              </ul>
+            </div>
+          </div>
+        </div>
       </motion.div>
     </div>
   );
