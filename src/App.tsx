@@ -1,15 +1,20 @@
 import { useState } from 'react';
 import { FirebaseProvider, useAuth } from './components/FirebaseContext';
 import { signInWithGoogle, auth } from './lib/firebase';
-import { Calendar, Users, LayoutDashboard, LogOut, Ticket } from 'lucide-react';
+import { Calendar, Users, LayoutDashboard, LogOut, Ticket, Settings } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import Inventory from './components/Inventory';
 import MyTeams from './components/MyTeams';
 import Opponents from './components/Opponents';
+import AdminDashboard from './components/AdminDashboard';
+
+const ADMIN_EMAIL = 'socalcustomcanopies@gmail.com';
 
 function AppContent() {
   const { user, loading } = useAuth();
-  const [activeTab, setActiveTab] = useState<'inventory' | 'teams' | 'opponents'>('inventory');
+  const [activeTab, setActiveTab] = useState<'inventory' | 'teams' | 'opponents' | 'admin'>('inventory');
+
+  const isAdmin = user?.email === ADMIN_EMAIL;
 
   if (loading) {
     return (
@@ -76,6 +81,7 @@ function AppContent() {
             { id: 'inventory', label: 'Book Field', icon: Calendar },
             { id: 'opponents', label: 'Find Opponents', icon: Users },
             { id: 'teams', label: 'My Teams', icon: LayoutDashboard },
+            ...(isAdmin ? [{ id: 'admin', label: 'Admin', icon: Settings }] : []),
           ].map((tab) => (
             <button
               key={tab.id}
@@ -104,6 +110,7 @@ function AppContent() {
             {activeTab === 'inventory' && <Inventory />}
             {activeTab === 'opponents' && <Opponents />}
             {activeTab === 'teams' && <MyTeams />}
+            {activeTab === 'admin' && isAdmin && <AdminDashboard />}
           </motion.div>
         </AnimatePresence>
       </main>

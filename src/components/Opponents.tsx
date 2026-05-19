@@ -104,7 +104,7 @@ const Opponents: React.FC = () => {
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Open Challenges</h2>
-        <p className="text-slate-500">Pick a fight! Join a team looking for an opponent.</p>
+        <p className="text-slate-500">Pick a match! Join a team looking for an opponent.</p>
       </div>
 
       {openSlots.length === 0 ? (
